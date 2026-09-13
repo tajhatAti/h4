@@ -3,43 +3,41 @@ import logging
 from flask import Flask, request
 import telebot
 
-# Logging চালু করা যাতে যেকোনো সমস্যা ব্যাকএন্ডে স্পষ্ট দেখা যায়
 logging.basicConfig(level=logging.INFO)
 
 TOKEN = '8828199644:AAH8pA8dgNUHeERBh14DgyyJoj5HKvG2pMg'
 RENDER_URL = 'https://h4-amza.onrender.com'
 WEBHOOK_URL = f"{RENDER_URL}/{TOKEN}"
 
-bot = telebot.TeleBot(TOKEN, threaded=False)  # Threaded=False দিলে Synchronous প্রসেসিং নিশ্চিত হয়
+# আপনার দেওয়া নির্দিষ্ট অ্যাডমিন আইডি (Integer হিসেবে রাখা হয়েছে)
+ADMIN_ID = 8768764605
+
+bot = telebot.TeleBot(TOKEN, threaded=False)
 app = Flask(__name__)
 
-# ১. কমান্ড ও মেসেজ হ্যান্ডলার
-@bot.message_handler(commands=['start', 'help'])
-def send_welcome(message):
-    try:
-        bot.reply_to(message, "হ্যালো! Webhook একদম সফলভাবে কাজ করছে।")
-    except Exception as e:
-        print(f"Error sending message: {e}")
+# ১. /start কমান্ডের হ্যান্ডলার
+@bot.message_handler(commands=['start'])
+def handle_start(message):
+    # শুধু অ্যাডমিন আইডি হলেই রেসপন্স করবে
+    if message.from_user.id == ADMIN_ID:
+        bot.reply_to(message, "স্বাগতম অ্যাডমিন! বট সফলভাবে আপনার নির্দেশের জন্য প্রস্তুত।")
+    # অন্য ইউজার হলে কোনো অ্যাকশন নেওয়া হবে না (Silent Ignore)
 
+# ২. সাধারণ মেসেজ হ্যান্ডলার
 @bot.message_handler(func=lambda message: True)
-def echo_all(message):
-    try:
-        bot.reply_to(message, f"আপনি লিখেছেন: {message.text}")
-    except Exception as e:
-        print(f"Error sending message: {e}")
+def handle_admin_messages(message):
+    # ইউজার আইডি চেক
+    if message.from_user.id == ADMIN_ID:
+        bot.reply_to(message, f"স্যার, আপনার পাঠানো মেসেজ পাওয়া গেছে: {message.text}")
+    # অন্য কেউ মেসেজ দিলে সম্পূর্ণ ইগনোর করবে
 
-# ২. অ্যাডভান্সড Webhook Endpoint
+# Webhook Endpoint
 @app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
     if request.headers.get('content-type') == 'application/json':
         try:
-            # Raw string ডাটা পড়া
             json_string = request.get_data().decode('utf-8')
-            
-            # telebot-এর স্ট্রিক্ট JSON পার্সার ব্যবহার করা (এটিই আসল ফিক্স)
             update = telebot.types.Update.de_json(json_string)
-            
-            # যদি পার্সিং ব্যর্থ না হয়, আপডেট প্রসেস করা
             if update:
                 bot.process_new_updates([update])
             return 'OK', 200
@@ -48,18 +46,18 @@ def webhook():
             return 'Error', 500
     return 'Forbidden', 403
 
-# ৩. হেলথ চেক রুট
+# Root Page
 @app.route('/')
 def index():
-    return "Bot Server is Healthy and Live!", 200
+    return "Admin Only Bot Server is Active!", 200
 
-# ৪. অ্যাপ চালুর সময় Webhook সক্রিয় করা
+# Webhook সেটআপ
 try:
     bot.remove_webhook()
     bot.set_webhook(url=WEBHOOK_URL)
-    print(">>> Webhook setup successfully completed! <<<")
+    print(">>> Admin Bot Webhook Set Successfully! <<<")
 except Exception as e:
-    print(f">>> Webhook setup failed: {e} <<<")
+    print(f">>> Webhook Setup Error: {e} <<<")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
