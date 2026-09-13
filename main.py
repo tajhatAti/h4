@@ -4,7 +4,7 @@ import telebot
 
 # আপনার বটের টোকেন এবং Render URL
 TOKEN = '8828199644:AAH8pA8dgNUHeERBh14DgyyJoj5HKvG2pMg'
-RENDER_URL = 'https://ahadorg.onrender.com'  # প্রয়োজন অনুযায়ী আপনার সঠিক URL দিন
+RENDER_URL = 'https://h4-amza.onrender.com'  # প্রয়োজন অনুযায়ী আপনার সঠিক URL দিন
 WEBHOOK_URL = f"{RENDER_URL}/{TOKEN}"
 
 bot = telebot.TeleBot(TOKEN)
